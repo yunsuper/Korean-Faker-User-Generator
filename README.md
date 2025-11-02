@@ -68,12 +68,12 @@
 - “그냥 사람이름, 전화번호, 이메일 좀 뿌려줘”가 필요할 때
 
 ### 🧪 스크린샷
-<img width="799" height="598" alt="스크린샷 2025-11-02 오후 3 29 20" src="https://github.com/user-attachments/assets/45612221-55b7-4135-8f75-d125659b79c8" />
 
-<img width="868" height="864" alt="스크린샷 2025-11-02 오후 3 29 33" src="https://github.com/user-attachments/assets/c481a26d-3a19-47fc-bf51-086ef134e122" />
+<img width="813" height="598" alt="스크린샷 2025-11-02 오후 3 29 20" src="https://github.com/user-attachments/assets/45612221-55b7-4135-8f75-d125659b79c8" />
 
+<img width="813" height="864" alt="스크린샷 2025-11-02 오후 3 29 33" src="https://github.com/user-attachments/assets/c481a26d-3a19-47fc-bf51-086ef134e122" />
 
-<img width="715" height="473" alt="스크린샷_2025-11-02_오후_2 22 46" src="https://github.com/user-attachments/assets/b6f0afbc-6882-42ad-8041-7b43a3a1df6b" />
+<img width="713" height="473" alt="스크린샷_2025-11-02_오후_2 22 46" src="https://github.com/user-attachments/assets/b6f0afbc-6882-42ad-8041-7b43a3a1df6b" />
 
 
 

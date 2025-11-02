@@ -76,6 +76,13 @@
             >
                 결과 복사 (JSON)
             </button>
+
+            <button 
+                id="csv-button"
+                class="hidden mt-2 w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-200 focus:outline-none focus:ring-4 focus:ring-green-300 active:bg-green-800"
+            >
+                CSV 다운로드
+            </button>
             <p id="copy-status" class="text-center mt-2 text-sm text-green-600 hidden">클립보드에 복사되었습니다!</p>
         </div>
     </div>
@@ -91,6 +98,7 @@
         const statusMessage = document.getElementById('status-message');
         const tableWrapper = document.getElementById('table-wrapper');
         const copyButton = document.getElementById('copy-button');
+        const csvButton = document.getElementById('csv-button');
         const copyStatus = document.getElementById('copy-status');
 
         let latestUsers = []; // 복사 기능을 위해 생성된 사용자 목록 저장
@@ -112,6 +120,7 @@
             if (isNaN(num) || num < 1 || num > 100) {
                 statusMessage.textContent = "⚠️ 사용자 수는 1명에서 100명 사이로 입력해야 합니다.";
                 statusMessage.classList.remove('hidden');
+                csvButton.classList.remove('hidden');
                 tableWrapper.classList.add('hidden');
                 copyButton.classList.add('hidden');
                 return;
@@ -121,6 +130,7 @@
             statusMessage.classList.remove('hidden');
             tableWrapper.classList.add('hidden'); 
             copyButton.classList.add('hidden');
+            csvButton.classList.remove('hidden'); 
             copyStatus.classList.add('hidden');
 
             latestUsers = [];
@@ -224,10 +234,46 @@
             document.body.removeChild(textarea);
         }
 
+        function downloadCSV() {
+            if (latestUsers.length === 0) return;
+
+            const header = ["fullname", "phone", "email", "password"];
+            const rows = latestUsers.map(user => [
+                user.fullname,
+                user.phone,
+                user.email,
+                user.password,
+            ]);
+
+            const csvContent = [
+                header.join(","), 
+                ...rows.map(row => row.join(","))
+            ].join("\n");
+
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+
+            // ✅ 날짜 문자열 생성
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, "0");
+            const day = String(today.getDate()).padStart(2, "0");
+            const dateString = `${year}-${month}-${day}`;
+
+            // ✅ 파일 이름에 날짜 포함
+            const filename = `korean_users_${dateString}.csv`;
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", filename);
+            link.click();
+        }
+
 
         // 이벤트 리스너 설정
         generateButton.addEventListener('click', generateUsers);
         copyButton.addEventListener('click', copyToClipboard);
+        csvButton.addEventListener('click', downloadCSV);
         
         // Enter 키로 생성 요청 처리
         numUsersInput.addEventListener('keydown', (e) => {

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한국어 더미 사용자 생성기</title>
+    <!-- Tailwind CSS 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter 폰트 설정 -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        /* 테이블 스트라이프 효과를 위한 커스텀 스타일 */
+        .result-table tbody tr:nth-child(odd) {
+            background-color: #f1f3f6;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+
+    <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-2xl">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-extrabold text-indigo-700">🇰🇷 한국어 더미 사용자 생성기</h1>
+            <p class="mt-2 text-gray-500">Electron Preload 스크립트를 통해 안전하게 데이터를 생성합니다.</p>
+        </header>
+
+        <!-- 입력 및 제어 영역 -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8 p-4 bg-indigo-50 rounded-lg shadow-inner">
+            <div class="flex-grow">
+                <label for="num-users" class="block text-sm font-medium text-gray-700 mb-1">생성할 사용자 수 (최대 100명)</label>
+                <input 
+                    type="number" 
+                    id="num-users" 
+                    value="10" 
+                    min="1" 
+                    max="100"
+                    class="w-full px-4 py-2 border border-indigo-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                    placeholder="숫자를 입력하세요"
+                >
+            </div>
+            <button 
+                id="generate-button"
+                class="sm:mt-auto px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-200 focus:outline-none focus:ring-4 focus:ring-indigo-300 active:bg-indigo-800"
+            >
+                데이터 생성
+            </button>
+        </div>
+
+        <!-- 결과 표시 영역 -->
+        <div id="results-container" class="mt-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">📊 생성 결과</h2>
+            <p id="status-message" class="text-gray-500 text-center py-4">사용자 수를 입력하고 '데이터 생성' 버튼을 눌러주세요.</p>
+            
+            <div id="table-wrapper" class="overflow-x-auto hidden">
+                <table class="min-w-full divide-y divide-gray-200 result-table rounded-lg shadow-lg">
+                    <thead class="bg-indigo-600 text-white">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-sm font-medium uppercase tracking-wider rounded-tl-lg">이름</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium uppercase tracking-wider">전화번호</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium uppercase tracking-wider">이메일</th>
+                            <th class="px-4 py-3 text-left text-sm font-medium uppercase tracking-wider rounded-tr-lg">비밀번호</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-list-body" class="bg-white divide-y divide-gray-200">
+                        <!-- 데이터가 여기에 삽입됩니다 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <button 
+                id="copy-button"
+                class="hidden mt-4 w-full px-6 py-3 bg-gray-800 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 transition duration-200 focus:outline-none focus:ring-4 focus:ring-gray-300 active:bg-gray-900"
+            >
+                결과 복사 (JSON)
+            </button>
+            <p id="copy-status" class="text-center mt-2 text-sm text-green-600 hidden">클립보드에 복사되었습니다!</p>
+        </div>
+    </div>
+
+    <script>
+        // ⭐️ Faker 모듈을 직접 로드하는 코드는 preload.js로 이동했습니다.
+        // 이제 window.fakerApi 객체를 통해 기능을 사용합니다.
+
+        // DOM 요소 참조
+        const numUsersInput = document.getElementById('num-users');
+        const generateButton = document.getElementById('generate-button');
+        const userListBody = document.getElementById('user-list-body');
+        const statusMessage = document.getElementById('status-message');
+        const tableWrapper = document.getElementById('table-wrapper');
+        const copyButton = document.getElementById('copy-button');
+        const copyStatus = document.getElementById('copy-status');
+
+        let latestUsers = []; // 복사 기능을 위해 생성된 사용자 목록 저장
+
+        /**
+         * 사용자 수를 기반으로 목록을 생성하고 화면에 렌더링합니다.
+         */
+        function generateUsers() {
+            // ⭐️ window.fakerApi 객체가 노출되었는지 확인
+            if (typeof window.fakerApi === 'undefined' || typeof window.fakerApi.generateFakeUser !== 'function') {
+                statusMessage.textContent = "❌ 오류 발생: Electron API (fakerApi)가 로드되지 않았습니다. main.js와 preload.js를 확인하세요.";
+                statusMessage.classList.add('text-red-600', 'font-bold');
+                return;
+            }
+
+            const num = parseInt(numUsersInput.value, 10);
+            
+            // 입력값 유효성 검사 (1명 이상 100명 이하)
+            if (isNaN(num) || num < 1 || num > 100) {
+                statusMessage.textContent = "⚠️ 사용자 수는 1명에서 100명 사이로 입력해야 합니다.";
+                statusMessage.classList.remove('hidden');
+                tableWrapper.classList.add('hidden');
+                copyButton.classList.add('hidden');
+                return;
+            }
+
+            statusMessage.textContent = '데이터 생성 중...';
+            statusMessage.classList.remove('hidden');
+            tableWrapper.classList.add('hidden'); 
+            copyButton.classList.add('hidden');
+            copyStatus.classList.add('hidden');
+
+            latestUsers = [];
+            
+            try {
+                // ⭐️ preload.js에서 노출된 generateFakeUser 함수를 호출합니다.
+                for (let i = 0; i < num; i++) {
+                    latestUsers.push(window.fakerApi.generateFakeUser());
+                }
+
+                renderUsers(latestUsers);
+                
+            } catch (error) {
+                 // Preload 스크립트에서 발생한 오류가 이쪽으로 넘어올 수 있습니다.
+                 statusMessage.textContent = `❌ 데이터 생성 중 오류 발생: ${error.message}`;
+                 statusMessage.classList.remove('text-gray-500', 'text-indigo-600', 'font-semibold');
+                 statusMessage.classList.add('text-red-600', 'font-bold');
+                 console.error("데이터 생성 중 오류:", error);
+            }
+        }
+
+        /**
+         * 생성된 사용자 목록을 HTML 테이블로 렌더링합니다.
+         * @param {Array<Object>} users 
+         */
+        function renderUsers(users) {
+            userListBody.innerHTML = '';
+            
+            users.forEach(user => {
+                const row = userListBody.insertRow();
+                row.className = 'hover:bg-indigo-100 transition duration-150';
+
+                // 셀 데이터 삽입
+                row.insertCell().textContent = user.fullname;
+                row.insertCell().textContent = user.phone;
+                row.insertCell().textContent = user.email;
+                row.insertCell().textContent = user.password;
+            });
+
+            // 상태 업데이트 및 요소 표시/숨기기
+            statusMessage.textContent = `${users.length}명의 한국어 더미 사용자가 성공적으로 생성되었습니다.`;
+            statusMessage.classList.remove('text-gray-500');
+            statusMessage.classList.add('text-indigo-600', 'font-semibold');
+            tableWrapper.classList.remove('hidden');
+            copyButton.classList.remove('hidden');
+        }
+
+        /**
+         * 생성된 JSON 데이터를 클립보드에 복사합니다.
+         */
+        function copyToClipboard() {
+            if (latestUsers.length === 0) return;
+
+            const jsonString = JSON.stringify(latestUsers, null, 2);
+            
+            try {
+                // navigator.clipboard.writeText를 사용합니다.
+                navigator.clipboard.writeText(jsonString).then(() => {
+                    copyStatus.textContent = "클립보드에 복사되었습니다! (JSON 형식)";
+                    copyStatus.classList.remove('hidden');
+                    
+                    // 2초 후 메시지 숨김
+                    setTimeout(() => {
+                        copyStatus.classList.add('hidden');
+                    }, 2000);
+
+                }).catch(err => {
+                    // 클립보드 API 실패 시
+                    fallbackCopy(jsonString);
+                });
+
+            } catch (err) {
+                fallbackCopy(jsonString);
+            }
+        }
+        
+        // 구형 브라우저 또는 권한 문제 발생 시 대안 복사 함수
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed'; 
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    copyStatus.textContent = "클립보드에 복사되었습니다! (JSON 형식)";
+                    copyStatus.classList.remove('hidden');
+                    setTimeout(() => {
+                        copyStatus.classList.add('hidden');
+                    }, 2000);
+                } else {
+                    console.error('클립보드 복사에 실패했습니다.');
+                }
+            } catch (err) {
+                 console.error('클립보드 복사 중 오류가 발생했습니다.');
+            }
+            
+            document.body.removeChild(textarea);
+        }
+
+
+        // 이벤트 리스너 설정
+        generateButton.addEventListener('click', generateUsers);
+        copyButton.addEventListener('click', copyToClipboard);
+        
+        // Enter 키로 생성 요청 처리
+        numUsersInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); 
+                generateUsers();
+            }
+        });
+
+        // 초기 로드 시 한 번 실행
+        window.onload = () => {
+             tableWrapper.classList.add('hidden');
+        }
+
+    </script>
+</body>
+</html>
